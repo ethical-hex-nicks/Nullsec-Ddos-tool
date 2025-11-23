@@ -1201,11 +1201,14 @@ class CliAttacker:
 def print_banner():
     columns = shutil.get_terminal_size().columns
     banner = r"""
-▒█▄░▒█ ▒█░▒█ ▒█░░░ ▒█░░░ ▒█▀▀▀█ ▒█▀▀▀ ▒█▀▀█ 
-▒█▒█▒█ ▒█░▒█ ▒█░░░ ▒█░░░ ░▀▀▀▄▄ ▒█▀▀▀ ▒█░░░ 
-▒█░░▀█ ░▀▄▄▀ ▒█▄▄█ ▒█▄▄█ ▒█▄▄▄█ ▒█▄▄▄ ▒█▄▄█
-   
-   Made By: Ethical Hex Nicks """
+    
+█▄░█ █░█ █░░ █░░ █▀ █▀▀ █▀▀
+█░▀█ █▄█ █▄▄ █▄▄ ▄█ ██▄ █▄▄
+
+█▀█ █░█ █ █░░ █ █▀█ █▀█ █ █▄░█ █▀▀ █▀
+█▀▀ █▀█ █ █▄▄ █ █▀▀ █▀▀ █ █░▀█ ██▄ ▄█
+
+     Made By: Ethical Hex Nicks """
     for line in banner.splitlines():
         print(f"{Fore.RED}{line.center(columns)}{Fore.RESET}")
 
