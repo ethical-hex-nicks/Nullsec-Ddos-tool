@@ -206,6 +206,7 @@ def print_banner():
  █▀▀ █▀█ █ █▄▄ █ █▀▀ █▀▀ █ █░▀█ ██▄ ▄█
 
       Made By: Ethical Hex Nicks
+      Maintained By: Anos Kurz
 """
     for line in banner.splitlines():
         print(f"{Fore.RED}{line.center(columns)}{Fore.RESET}")
